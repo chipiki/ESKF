@@ -15,7 +15,7 @@ def make_matrix(name, rows, cols):
     M = sp.zeros(rows, cols)
     for i in range(rows):
         for j in range(cols):
-            M[i,j] = sp.symbols("{}[{}][{}]".format(name, i, j))
+            M[i,j] = sp.Symbol('{}({},{})'.format(name, i, j))
     return M
 
 def copy_lower_to_upper(M):
@@ -66,13 +66,13 @@ header = """
 #ifndef UNROLLEDFPFT_H
 #define UNROLLEDFPFT_H
 
-static inline unrolledFPFt(
+static inline void unrolledFPFt(
         const Eigen::Matrix<float, dSTATE_SIZE, dSTATE_SIZE>& Pin,
         Eigen::Matrix<float, dSTATE_SIZE, dSTATE_SIZE>& Pnew,
         const float dt,
         const Eigen::Matrix3f& dVel_dTheta,
         const Eigen::Matrix3f& dVel_dAccelBias,
-        const Eigen::Matrix3f& dTheta_dTheta,
+        const Eigen::Matrix3f& dTheta_dTheta
         ) {
 """
 

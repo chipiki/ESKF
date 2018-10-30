@@ -1,4 +1,5 @@
-#include <ESKF.h>
+#include "ESKF.h"
+#include "unrolledFPFt.h"
 
 #define SQ(x) (x*x)
 #define I_3 (Eigen::Matrix3f::Identity())
@@ -124,24 +125,26 @@ void ESKF::predictIMU(const Vector3f& a_m, const Vector3f& omega_m, const float 
     nominalState_.block<3, 1>(VEL_IDX, 0) += (acc_global + a_gravity_)*dt;
     nominalState_.block<4, 1>(QUAT_IDX, 0) = quatToHamilton(getQuat()*q_delta_theta).normalized();
 
-    // Jacobian of the state transition (eqn 269, page 59)
-    // Update dynamic parts only
-    // dPos row
-    F_x_.block<3, 3>(dPOS_IDX, dVEL_IDX).diagonal().fill(dt); // = I_3 * _dt
-    // dVel row
-    F_x_.block<3, 3>(dVEL_IDX, dTHETA_IDX) = -Rot * getSkew(acc_body) * dt;
-    F_x_.block<3, 3>(dVEL_IDX, dAB_IDX) = -Rot * dt;
-    // dTheta row
-    F_x_.block<3, 3>(dTHETA_IDX, dTHETA_IDX) = R_delta_theta.transpose();
-    F_x_.block<3, 3>(dTHETA_IDX, dGB_IDX).diagonal().fill(-dt); // = -I_3 * dt;
+    // // Jacobian of the state transition (eqn 269, page 59)
+    // // Update dynamic parts only
+    // // dPos row
+    // F_x_.block<3, 3>(dPOS_IDX, dVEL_IDX).diagonal().fill(dt); // = I_3 * _dt
+    // // dVel row
+    // F_x_.block<3, 3>(dVEL_IDX, dTHETA_IDX) = -Rot * getSkew(acc_body) * dt;
+    // F_x_.block<3, 3>(dVEL_IDX, dAB_IDX) = -Rot * dt;
+    // // dTheta row
+    // F_x_.block<3, 3>(dTHETA_IDX, dTHETA_IDX) = R_delta_theta.transpose();
+    // F_x_.block<3, 3>(dTHETA_IDX, dGB_IDX).diagonal().fill(-dt); // = -I_3 * dt;
 
     // Predict P and inject variance (with diagonal optimization)
     // P_ = F_x_*P_*F_x_.transpose();
-    // Symmetric matrix optimization: Only evaluate lower triangular, then copy to upper
-    // This is not faster on a vectorizing machine, but on an embedded target it probably is.
-    // TODO: verify this!
-    P_.triangularView<Lower>() = F_x_ * P_.selfadjointView<Lower>() * F_x_.transpose();
-    P_ = P_.selfadjointView<Lower>();
+
+    Matrix<float, dSTATE_SIZE, dSTATE_SIZE> Pnew;
+    unrolledFPFt(P_, Pnew, dt,
+        -Rot * getSkew(acc_body) * dt,
+        -Rot * dt,
+        R_delta_theta.transpose());
+    P_ = Pnew;
 
     // Inject process noise
     P_.diagonal().block<3, 1>(dVEL_IDX, 0).array() += var_acc_ * SQ(dt);
