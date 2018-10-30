@@ -27,9 +27,9 @@ ESKF::ESKF(Eigen::Vector3f a_gravity,
     // dVel row
     F_x_.block<3, 3>(dVEL_IDX, dVEL_IDX) = I_3;
     // dTheta row
-    // dGyroBias row
-    F_x_.block<3, 3>(dAB_IDX, dAB_IDX) = I_3;
     // dAccelBias row
+    F_x_.block<3, 3>(dAB_IDX, dAB_IDX) = I_3;
+    // dGyroBias row
     F_x_.block<3, 3>(dGB_IDX, dGB_IDX) = I_3;
 }
 

@@ -1,3 +1,5 @@
+#ifndef ESKF_H
+#define ESKF_H
 
 // Malloc is really bad on embedded platform
 #define EIGEN_NO_MALLOC
@@ -109,3 +111,5 @@ private:
     // and update the dynamic parts in the predict function
     Eigen::Matrix<float, dSTATE_SIZE, dSTATE_SIZE> F_x_;
 };
+
+#endif /* ESKF_H */
