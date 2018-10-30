@@ -1,9 +1,17 @@
+
+// Uncomment this to catch floating point exceptions when debugging on desktop.
+// This throws an exception when result is NaN or on overflow, etc.
+// #include <float.h>
+// volatile unsigned int fp_control_state = _controlfp(_EM_UNDERFLOW|_EM_INEXACT, _MCW_EM);
+
 #include <ESKF.h>
 #include <iostream>
 #include <chrono>
 
-#define SQ(x) (x*x)
 #define GRAVITY 	9.812  // London g value.
+#define SQ(x) (x*x)
+#define I_3 (Eigen::Matrix3f::Identity())
+#define I_dx (Eigen::Matrix<float, dSTATE_SIZE, dSTATE_SIZE>::Identity())
 
 using namespace Eigen;
 using namespace std;
@@ -21,11 +29,10 @@ int main(int argc, char** argv) {
     float sigma_init_accel_bias = 100*sigma_accel_drift; // [m/s^2]
     float sigma_init_gyro_bias = 100*sigma_gyro_drift; // [rad/s]
 
-    float sigma_mocap_pos = 0.01; // [m]
-    float sigma_mocap_rot = 0.1; // [rad]
+    float sigma_mocap_pos = 0.001; // [m]
+    float sigma_mocap_rot = 0.01; // [rad]
 
     ESKF eskf(
-            0.001f, // delta_t
             Vector3f(0, 0, -GRAVITY), // Acceleration due to gravity in global frame
             ESKF::makeState(
                 Vector3f(0, 0, 0), // init pos
@@ -54,7 +61,7 @@ int main(int argc, char** argv) {
         // Simulated static true pos/orientation
         Vector3f pos_true = Vector3f(0, 0, 0);
         Quaternionf q_true = Quaternionf(AngleAxisf(0.0f, Vector3f(1, 0, 0)));
-        // Quaternionf q_true = Quaternionf(AngleAxisf(0.001f*ms, Vector3f(1, 0, 0)));
+        // Quaternionf q_true = Quaternionf(AngleAxisf(0.002f*ms, Vector3f(1, 0, 0)));
         Matrix3f R_true = q_true.toRotationMatrix();
 
         // Fake accel/gyro
@@ -62,7 +69,7 @@ int main(int argc, char** argv) {
         Vector3f acc = acc_true + sigma_accel * Vector3f::Random();
         Vector3f gyro = sigma_gyro * Vector3f::Random();
         // Input our accel/gyro data
-        eskf.predictIMU(acc, gyro);
+        eskf.predictIMU(acc, gyro, 0.001f);
 
         // 10 accel/gyro measurements per motion capture input.
         if (ms % 10 == 0) {
