@@ -58,14 +58,26 @@ int main(int argc, char** argv) {
     if (argc >= 2) {
         // Run from file
         std::ifstream infile(argv[1]);
-        std::ofstream outfile("out.txt");
+
+        std::ofstream outfile("filtered.txt");
         outfile.precision(20);
+        outfile << "t, posx, posy, posz, velx, vely, velz, quatw, quatx, quaty, quatz, acc_bias_x, acc_bias_y, acc_bias_z, gyro_bias_x, gyro_bias_y, gyro_bias_z" << std::endl;
+
+        std::ofstream IMUfile("inIMU.txt"); // Echo what went in, for consistent formatting
+        IMUfile << "t, accx, accy, accz, gyrox, gyroy, gyroz" << std::endl;
+        IMUfile.precision(20);
+
+        std::ofstream Mocapfile("inMocap.txt");
+        Mocapfile << "t, posx, posy, posz, quatw, quatx, quaty, quatz" << std::endl;
+        Mocapfile.precision(20);
+
         std::string line;
         std::string IMU_Prefix("IMU");
         std::string MOCAP_Prefix("Mocap");
         float accel_units = 9.81;
-        float gyro_units = 360.0f / (2 * M_PI);
+        float gyro_units = (2 * M_PI) / 360.0f;
         IOFormat CsvStyle(StreamPrecision, DontAlignCols, ", ", ", ", "", "", "", "");
+        // Drop in csv header
         while (std::getline(infile, line)) {
             double t = 0;
             if(!line.compare(0, IMU_Prefix.length(), IMU_Prefix)) {
@@ -79,10 +91,14 @@ int main(int argc, char** argv) {
                         &gyro(0), &gyro(1), &gyro(2),
                         &sec, &nsec);
                 t = (double)sec + (double)nsec * 1e-9;
-                accel.array() /= accel_units;
-                gyro.array() /= gyro_units;
+                accel.array() *= accel_units;
+                gyro.array() *= gyro_units;
 
                 eskf.predictIMU(accel, gyro, 0.001f);
+
+                IMUfile << t << ", " <<
+                        accel.format(CsvStyle) << ", " <<
+                        gyro.format(CsvStyle) << std::endl;
             } else if(!line.compare(0, MOCAP_Prefix.length(), MOCAP_Prefix)) {
                 // Process mocap
                 Vector3f pos_meas;
@@ -98,17 +114,20 @@ int main(int argc, char** argv) {
 
                 eskf.measurePos(pos_meas, SQ(sigma_mocap_pos)*I_3);
                 eskf.measureQuat(q_meas, SQ(sigma_mocap_rot)*I_3);
+
+                Mocapfile << t << ", " <<
+                        pos_meas.format(CsvStyle) << ", " <<
+                        ESKF::quatToHamilton(q_meas).format(CsvStyle) << std::endl;
             } else {
                 continue;
             }
 
-            outfile << t << "," <<
-                    eskf.getPos().format(CsvStyle) <<
-                    eskf.getVel().format(CsvStyle) <<
-                    eskf.getQuatVector().format(CsvStyle) <<
-                    eskf.getAccelBias().format(CsvStyle) <<
-                    eskf.getGyroBias().format(CsvStyle) <<
-                    std::endl;
+            outfile << t << ", " <<
+                    eskf.getPos().format(CsvStyle) << ", " <<
+                    eskf.getVel().format(CsvStyle) << ", " <<
+                    eskf.getQuatVector().format(CsvStyle) << ", " <<
+                    eskf.getAccelBias().format(CsvStyle) << ", " <<
+                    eskf.getGyroBias().format(CsvStyle) << std::endl;
         }
     }
     else {
