@@ -22,14 +22,14 @@ int main(int argc, char** argv) {
 
     float sigma_accel = 0.124; // [m/s^2]  (value derived from Noise Spectral Density in datasheet)
     float sigma_gyro = 0.00276; // [rad/s] (value derived from Noise Spectral Density in datasheet)
-    float sigma_accel_drift = 0.0025; // [m/s^2 sqrt(s)] (Educated guess, real value to be measured)
-    float sigma_gyro_drift = 5e-5; // [rad/s sqrt(s)] (Educated guess, real value to be measured)
+    float sigma_accel_drift = 0.001f*sigma_accel; // [m/s^2 sqrt(s)] (Educated guess, real value to be measured)
+    float sigma_gyro_drift = 0.001f*sigma_gyro; // [rad/s sqrt(s)] (Educated guess, real value to be measured)
 
     float sigma_init_pos = 1.0; // [m]
     float sigma_init_vel = 0.1; // [m/s]
     float sigma_init_dtheta = 1.0; // [rad]
-    float sigma_init_accel_bias = 100*sigma_accel_drift; // [m/s^2]
-    float sigma_init_gyro_bias = 100*sigma_gyro_drift; // [rad/s]
+    float sigma_init_accel_bias = 10000*sigma_accel_drift; // [m/s^2]
+    float sigma_init_gyro_bias = 10000*sigma_gyro_drift; // [rad/s]
 
     float sigma_mocap_pos = 0.003; // [m]
     float sigma_mocap_rot = 0.03; // [rad]
